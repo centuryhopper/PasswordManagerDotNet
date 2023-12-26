@@ -1,0 +1,111 @@
+@* 
+
+<div class="container-fluid">
+    <EditForm Model="@Model" OnValidSubmit="HandleEditProfile" OnInvalidSubmit="ShowErrors">
+        <div class="card">
+            <h4 class="text-center card-header">
+                Edit Profile
+            </h4>
+            <div class="card-body">
+                <DataAnnotationsValidator/>
+                <p class="form-group">
+                    <label class="m-2">Email</label>
+                    <RadzenTextBox @bind-Value="Model.Email" class="form-control" />
+                    <ValidationMessage For="@(() => Model.Email)"/>
+                </p>
+
+                <p class="form-group">
+                    <label class="m-2">First Name</label>
+                    <RadzenTextBox @bind-Value="Model.FirstName" class="form-control" />
+                    <ValidationMessage For="@(() => Model.FirstName)"/>
+                </p>
+
+                <p class="form-group">
+                    <label class="m-2">Last Name</label>
+                    <RadzenTextBox @bind-Value="Model.LastName" class="form-control" />
+                    <ValidationMessage For="@(() => Model.LastName)"/>
+                </p>
+
+                <p class="form-group">
+                    <label class="m-2">Old Password</label>
+                    <RadzenPassword class="form-control" @bind-Value="@Model.OldPassword" Visible="@(OldPasswordVisible == false)" />
+                    <RadzenTextBox class="form-control" @bind-Value="@Model.OldPassword" Visible="@OldPasswordVisible" />
+                    <br>
+                    Show <RadzenCheckBox @bind-Value="@OldPasswordVisible" />
+                </p>
+
+                <p class="form-group">
+                    <label class="m-2">New Password</label>
+                    <RadzenPassword class="form-control" @bind-Value="@Model.NewPassword" Visible="@(NewPasswordVisible == false)" />
+                    <RadzenTextBox class="form-control" @bind-Value="@Model.NewPassword" Visible="@NewPasswordVisible" />
+                    <ValidationMessage For="@(() => Model.NewPassword)"/>
+                </p>
+                <p class="form-group">
+                    <label class="m-2">Confirm New Password</label>
+                    <RadzenPassword class="form-control" @bind-Value="@Model.ConfirmNewPassword" Visible="@(NewPasswordVisible == false)" />
+                    <RadzenTextBox class="form-control" @bind-Value="@Model.ConfirmNewPassword" Visible="@NewPasswordVisible" />
+                    <br>
+                    Show <RadzenCheckBox @bind-Value="@NewPasswordVisible" />
+                    <ValidationMessage For="@(() => Model.ConfirmNewPassword)"/>
+                </p>
+
+                <p class="form-group">
+                    <label class="m-2">Role</label>
+                    <RadzenDropDown @bind-Value=@Model.Role Data=@Roles Style="width: 100%; max-width: 400px;" />
+                    <ValidationMessage For="@(() => Model.Role)"/>
+                </p>
+
+
+            </div>
+            <div class="m-3">
+                <button class="btn btn-primary">Submit Changes</button>
+            </div>
+        </div>
+    </EditForm>
+
+    @if (EditMessages is not null)
+    {
+        <ul>
+            @foreach (var message in EditMessages)
+            {
+                <li>@message</li>
+            }
+        </ul>
+    }
+</div>
+
+
+@code {
+
+    private EditAccountModel Model = new();
+    private bool OldPasswordVisible, NewPasswordVisible;
+    [Inject] private IModalService Modal {get;set;}
+    
+    private IEnumerable<string>? Roles {get;set;}
+    private IEnumerable<string>? CookieClaims {get;set;}
+    private IEnumerable<string>? EditMessages {get;set;}
+    
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        Roles = await accountApiService.GetRoles();
+        CookieClaims = await accountApiService.GetCookieClaims();
+    }
+
+    private async Task HandleEditProfile()
+    {
+        // update user info
+        // any non null values will be updated
+        // only update user password to the new one if the old password is correct.
+        Model.Id = CookieClaims.FirstOrDefault(_ => _.Contains("userid")).Split(":")[1];
+        System.Console.WriteLine($"edit modal user id: {Model.Id}");
+
+        EditMessages = await accountApiService.UpdateUserAsync(Model);
+    }
+
+    private void ShowErrors()
+    {
+        Modal.Show<AuthenticationErrorModal>("Error", new ModalParameters { { "ErrorMessage", "Couldn't edit your profile." } });
+    }
+} *@

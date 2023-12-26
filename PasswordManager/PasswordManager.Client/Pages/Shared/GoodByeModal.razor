@@ -1,0 +1,28 @@
+@page "/goodbye"
+
+@inject NavigationManager NavManager
+
+
+<p>Sorry to see you go :( We will miss you. You're always welcome to come back ^_^</p>
+
+<button class="btn btn-primary" @onclick="@(()=>NavManager.NavigateTo(""))">Okay</button>
+
+
+@code {
+    //private async Task Logout()
+    //{
+    //    
+    //    var response = await accountApiService.LogoutAsync();
+    //    if (response)
+    //    {
+    //        NavManager.NavigateTo("", true);
+    //    }
+    //    else
+    //    {
+    //        System.Console.WriteLine("cannot log out and delete account for some reason");
+    //    }
+    //    
+    //    
+    //    
+    //} 
+}

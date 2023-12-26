@@ -42,8 +42,8 @@ public class PasswordManagerAccountRepository : IPasswordManagerAccountRepositor
 
     public async Task<IEnumerable<PasswordmanagerAccount>> GetAllAccountsAsync(string userId)
     {
-        // var results = await PasswordAccountContext.PasswordmanagerAccounts.AsNoTracking().Where(a => a.Userid == userId).ToListAsync();
-        var results = await PasswordAccountContext.PasswordmanagerAccounts.AsNoTracking().ToListAsync();
+        var results = await PasswordAccountContext.PasswordmanagerAccounts.AsNoTracking().Where(a => a.Userid == userId).ToListAsync();
+        // var results = await PasswordAccountContext.PasswordmanagerAccounts.AsNoTracking().ToListAsync();
 
         if (!results.Any())
         {

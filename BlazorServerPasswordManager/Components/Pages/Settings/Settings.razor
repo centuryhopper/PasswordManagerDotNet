@@ -1,0 +1,14 @@
+@page "/settings"
+@inherits SettingsBase
+
+<AuthorizeView>
+    <Authorized>
+        <button class="btn btn-danger" @onclick="HandleDeleteUserProfile">Delete Account</button>
+        <button class="btn btn-primary" @onclick=HandleEdit>Edit Profile</button>
+    </Authorized>
+
+    <NotAuthorized>
+        <p>You're not authorized to access this route</p>
+    </NotAuthorized>
+</AuthorizeView>
+

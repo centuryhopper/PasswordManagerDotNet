@@ -1,0 +1,25 @@
+<p class="text-danger">Are you sure you want to delete this? It is an irreversible action!</p>
+
+<div class="row"> 
+	<div class="col-md-6"> 
+    	<button @onclick="Yes" class="btn btn-secondary" style="min-width:120px">Yes</button> 
+	</div> 
+	<div class="col-md-6"> 
+    	<button @onclick="No" class="btn btn-secondary" style="min-width:120px">No</button> 
+	</div> 
+</div> 
+
+
+@code {
+    [CascadingParameter] BlazoredModalInstance ModalInstance { get; set; } 
+  
+	void Yes() 
+	{ 
+        ModalInstance.CloseAsync(); //CloseAsync signals that the dialog was not cancelled but closed 
+	} 
+	void No() 
+	{ 
+        ModalInstance.CancelAsync(); //CancelAsync signals that the modal was canceled (either via button, or clicking x or clicking outside of modal) 
+	} 
+
+}

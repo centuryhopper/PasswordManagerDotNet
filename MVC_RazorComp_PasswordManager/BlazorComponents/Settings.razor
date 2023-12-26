@@ -1,0 +1,25 @@
+
+
+<button class="btn btn-danger" @onclick="HandleDeleteUserProfile">Delete Account</button>
+<button class="btn btn-primary" @onclick=HandleEdit>Edit Profile</button>
+
+
+
+@code {
+    private void HandleEdit()
+    {
+        // Modal.Show<EditProfileModal>();
+    }
+
+    private async Task HandleDeleteUserProfile()
+    {
+        // var confirmModal = Modal.Show<ConfirmationModal>("Warning!");
+        // var modalResult = await confirmModal.Result;
+
+        // // If the modal was not cancelled, take the action
+        // if (modalResult.Confirmed)
+        // {
+        //     Modal.Show<PasswordModal>("Enter your email and password");
+        // }
+    }
+}

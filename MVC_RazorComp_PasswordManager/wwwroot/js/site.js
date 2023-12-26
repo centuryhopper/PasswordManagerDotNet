@@ -3,6 +3,11 @@
 
 // Write your JavaScript code.
 
+function bs()
+{
+    console.log('here bitches!!!')
+}
+
 const showHidePasswordField = (fieldId) => {
 
     $(`#${fieldId} a`).on('click', function(event) {

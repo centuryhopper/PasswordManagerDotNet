@@ -1,6 +1,9 @@
 using System.Diagnostics;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MVC_RazorComp_PasswordManager.Contexts;
+using MVC_RazorComp_PasswordManager.Interfaces;
 using MVC_RazorComp_PasswordManager.Models;
 
 namespace MVC_RazorComp_PasswordManager.Controllers;
@@ -8,16 +11,33 @@ namespace MVC_RazorComp_PasswordManager.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly IPasswordManagerAccountRepository<PasswordmanagerAccount> passwordManagerAccountRepository;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, IPasswordManagerAccountRepository<PasswordmanagerAccount> passwordManagerAccountRepository)
     {
         _logger = logger;
+        this.passwordManagerAccountRepository = passwordManagerAccountRepository;
+    }
+
+    [Authorize, HttpPost]
+    public async Task<IActionResult> UploadCSV(IFormFile file, string userId)
+    {
+        _logger.LogWarning("yolo");
+        var result = await passwordManagerAccountRepository.UploadCsvAsync(file, userId);
+
+        if (result is null)
+        {
+            return BadRequest("failed to upload csv");
+        }
+
+        return Ok("upload csv success!");
     }
 
     [Authorize]
     public IActionResult Index()
     {
-        // render password component on this page
+        var userId = HttpContext.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
+        ViewBag.userId = userId;
         return View();
     }
 
