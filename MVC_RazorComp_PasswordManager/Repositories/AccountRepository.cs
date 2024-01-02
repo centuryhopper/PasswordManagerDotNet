@@ -33,12 +33,13 @@ public class AccountRepository : IAccountRepository
 
     public async Task<IEnumerable<string>> GetRolesAsync()
     {
-        throw new NotImplementedException();
+        return from role in await passwordAccountContext.Roles.ToListAsync() select role.Name;
     }
 
-    public async Task<UserModel?> GetUserByIdAsync(string UserId)
+    public async Task<PasswordmanagerUser?> GetUserByIdAsync(string userId)
     {
-        throw new NotImplementedException();
+        var user = await passwordAccountContext.PasswordmanagerUsers.FindAsync(userId);
+        return user;
     }
 
     public async Task<EmailConfirmStatus> IsEmailConfirmed(string email)
@@ -168,7 +169,41 @@ public class AccountRepository : IAccountRepository
 
     public async Task<IEnumerable<string>> UpdateUserAsync(EditAccountModel model)
     {
-        throw new NotImplementedException();
+        // yell at the user if old password is incorrect
+        var userModel = await GetUserByIdAsync(model.Id!);
+
+        if (userModel is null)
+        {
+            return ["User Not Found"];
+        }
+
+        var hashedPW = encryptionContext.OneWayHash($"{model.OldPassword}{userModel.Salt}");
+
+        if (hashedPW != userModel.Passwordhash)
+        {
+            return ["Your old password is incorrect"];
+        }
+
+        // modify fields
+        userModel.Firstname = model.FirstName;
+        userModel.Lastname = model.LastName;
+
+        int salt = new Random().Next();
+        var saltedPW = $"{model.NewPassword}{salt}";
+        var passwordHash = encryptionContext.OneWayHash(saltedPW);
+        userModel.Salt = salt.ToString();
+        userModel.Passwordhash = passwordHash;
+
+        // TODO: change role as well if different
+        // delete old userrole link and add new one
+
+        // TODO: send confirmation email if user entered a new email
+        // only remove the current working email once confirmed
+        // in case they make a mistake and typed in the wrong email and cant log back in
+
+        await passwordAccountContext.SaveChangesAsync();
+
+        return ["success!"];
     }
 
     public async Task<bool> VerifyToken(AccountProviders accountProviders, string token, string userId)

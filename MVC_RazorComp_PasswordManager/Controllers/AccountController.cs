@@ -130,9 +130,15 @@ public class AccountController : Controller
         return RedirectToAction(nameof(Register));
     }
 
+    public async Task<IActionResult> EditProfile()
+    {
+        ViewBag.UserId = User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
+        return View();
+    }
+
     public async Task<IActionResult> LogOut()
     {
-        var userId = HttpContext.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
+        var userId = User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
         var logout = await accountRepository.LogoutAsync(userId);
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         HttpContext.Session.Clear();

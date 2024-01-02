@@ -32,7 +32,7 @@
 
                     <li>
 
-                        @Html.ActionLink($"Hello {User.Claims.FirstOrDefault(c=>c.Type == ClaimTypes.Email)?.Value ?? "yo"}!", "EditSelfInfo", "Account", null, new {style="text-decoration: none;", @class="dropdown-item"})
+                        @Html.ActionLink($"Hello {User.Claims.FirstOrDefault(c=>c.Type == ClaimTypes.Email)?.Value ?? "yo"}!", "EditProfile", "Account", null, new {style="text-decoration: none;", @class="dropdown-item"})
 
                     </li>
 

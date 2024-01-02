@@ -1,9 +1,8 @@
 
 
-<button class="btn btn-danger" @onclick="HandleDeleteUserProfile">Delete Account</button>
-<button class="btn btn-primary" @onclick=HandleEdit>Edit Profile</button>
-
-
+<div class="m-5">
+    <button class="btn btn-danger" @onclick="HandleDeleteUserProfile">Delete Account</button>
+</div>
 
 @code {
     private void HandleEdit()
@@ -13,6 +12,7 @@
 
     private async Task HandleDeleteUserProfile()
     {
+        await jsRuntime.InvokeVoidAsync("alert", "are you sure you want to delete?");
         // var confirmModal = Modal.Show<ConfirmationModal>("Warning!");
         // var modalResult = await confirmModal.Result;
 
