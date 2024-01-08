@@ -3,6 +3,9 @@ using MVC_RazorComp_PasswordManager.Contexts;
 using MVC_RazorComp_PasswordManager.Interfaces;
 using MVC_RazorComp_PasswordManager.Repositories;
 
+// TODO: change connection string before entering real data because previous connection string has already been committed to source control
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -10,6 +13,7 @@ builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(2);
 });
+
 builder
     .Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -18,6 +22,20 @@ builder
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.HttpOnly = true;
     });
+
+builder.Services.Configure<CookieAuthenticationOptions>(config => {
+    config.AccessDeniedPath = new PathString("/AccessDenied");
+    config.Events = new CookieAuthenticationEvents
+            {
+                OnRedirectToAccessDenied = context =>
+                {
+                    // Custom logic when redirecting to access denied page
+                    context.Response.Redirect("/AccessDenied");
+                    return Task.CompletedTask;
+                },
+                // Add other event handlers as needed
+            };
+});
 
 builder.Services.AddAuthorization(options =>
 {

@@ -3,6 +3,8 @@ using MVC_RazorComp_PasswordManager.Contexts;
 using Microsoft.EntityFrameworkCore;
 using MVC_RazorComp_PasswordManager.Models;
 using MVC_RazorComp_PasswordManager.Interfaces;
+using System.Net.Mail;
+using System.Net;
 
 namespace MVC_RazorComp_PasswordManager.Repositories;
 
@@ -20,12 +22,17 @@ public class AccountRepository : IAccountRepository
 {
     private readonly EncryptionContext encryptionContext;
     private readonly PasswordAccountContext passwordAccountContext;
+    private readonly IHttpContextAccessor httpContextAccessor;
+    private readonly IConfiguration config;
 
-    public AccountRepository(EncryptionContext encryptionContext, PasswordAccountContext passwordAccountContext)
+    public AccountRepository(EncryptionContext encryptionContext, PasswordAccountContext passwordAccountContext, IHttpContextAccessor httpContextAccessor, IConfiguration config)
     {
         this.encryptionContext = encryptionContext;
         this.passwordAccountContext = passwordAccountContext;
+        this.httpContextAccessor = httpContextAccessor;
+        this.config = config;
     }
+
     public async Task<DeleteUserProfileStatus> DeleteUserAsync(string Id)
     {
         throw new NotImplementedException();
@@ -56,24 +63,27 @@ public class AccountRepository : IAccountRepository
     {
         var users = passwordAccountContext.PasswordmanagerUsers.AsQueryable();
         var roles = passwordAccountContext.Roles.AsQueryable();
-        var userroles = passwordAccountContext.Userroles.AsQueryable();
+        // var userroles = passwordAccountContext.Userroles.AsQueryable();
+        List<string> userroles = [ ];
 
-        var dbResult = from u in users
-                       where u.Email == email
-                       join ur in passwordAccountContext.Userroles on u.Id equals ur.Userid into userRoles_g
-                       from userRole in userRoles_g.DefaultIfEmpty()
-                       join r in passwordAccountContext.Roles on userRole.Roleid equals r.Id into roles_g
-                       from r in roles_g.DefaultIfEmpty()
-                       select new UserModel
-                       {
-                           Id = u.Id,
-                           Salt = u.Salt,
-                           PasswordHash = u.Passwordhash,
-                           Email = u.Email,
-                           FirstName = u.Firstname,
-                           LastName = u.Lastname,
-                           Role = r.Name
-                       };
+        List<UserModel> dbResult = [];
+
+        // var dbResult = from u in users
+        //                where u.Email == email
+        //                join ur in passwordAccountContext.Userroles on u.Id equals ur.Userid into userRoles_g
+        //                from userRole in userRoles_g.DefaultIfEmpty()
+        //                join r in passwordAccountContext.Roles on userRole.Roleid equals r.Id into roles_g
+        //                from r in roles_g.DefaultIfEmpty()
+        //                select new UserModel
+        //                {
+        //                    Id = u.Id,
+        //                    Salt = u.Salt,
+        //                    PasswordHash = u.Passwordhash,
+        //                    Email = u.Email,
+        //                    FirstName = u.Firstname,
+        //                    LastName = u.Lastname,
+        //                    Role = r.Name
+        //                };
 
         return dbResult.FirstOrDefault();
     }
@@ -156,8 +166,28 @@ public class AccountRepository : IAccountRepository
 
             // assign role of "User" to this user
             var role = await passwordAccountContext.Roles.FirstAsync(r => r.Name == "User");
-            await passwordAccountContext.Userroles.AddAsync(new Userrole { Roleid = role.Id, Userid = Id });
+            // await passwordAccountContext.Userroles.AddAsync(new Userrole { Roleid = role.Id, Userid = Id });
             await passwordAccountContext.SaveChangesAsync();
+
+            // create and send email confirmation link
+            var token = TokenGenerator.GenerateToken(32);
+
+            var TokenPK = Guid.NewGuid().ToString();
+            var LoginProvider = AccountProviders.EMAIL_CONFIRMATION.ToString();
+            // make sure there are no spaces to preserve consistent token identity when passing thru urls
+            var ProviderKey = token.Replace(" ", "+");
+            var UserIdFK = Id;
+
+            await passwordAccountContext.Usertokens.AddAsync(new Usertoken
+            {
+                Id = TokenPK,
+                Loginprovider = LoginProvider,
+                Providerkey = ProviderKey,
+                Userid = UserIdFK,
+            });
+
+            // store token in user token table
+            SendConfirmationEmail(model.Email, $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}/confirm-email/?token={token}&userId={UserIdFK}");
 
             return new AuthStatus { Successful = true, Id = Id, Email = model.Email, Name = model.FirstName + " " + model.LastName, Role = role.Name };
         }
@@ -208,6 +238,72 @@ public class AccountRepository : IAccountRepository
 
     public async Task<bool> VerifyToken(AccountProviders accountProviders, string token, string userId)
     {
-        throw new NotImplementedException();
+        var loginProvider = accountProviders.ToString();
+        try
+        {
+            var result = await passwordAccountContext.Usertokens.FirstAsync(ut => ut.Userid == userId && ut.Loginprovider == loginProvider);
+
+            // we know the any spaces of the token stored in the db has pluses replaced them, so we do this with our current token as well
+            token = token.Replace(" ", "+");
+
+            if (string.IsNullOrEmpty(result.Providerkey) || result.Providerkey != token)
+            {
+                Console.WriteLine($"token: {token}");
+                Console.WriteLine($"result: {result}");
+                return false;
+            }
+
+            // mark email as confirmed
+            var updatedUserEmailConfirmed = await passwordAccountContext.PasswordmanagerUsers.FirstAsync(u => u.Id == userId);
+            updatedUserEmailConfirmed.Emailconfirmed.Set(0, true);
+
+            await passwordAccountContext.SaveChangesAsync();
+
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e.Message);
+            return false;
+        }
     }
+
+    private void SendConfirmationEmail(string recipientEmail, string confirmationLink)
+    {
+        // Configure email settings
+        string senderEmail = config.GetSection("EmailSettings:SenderEmail").Value!;
+        string senderPassword = config.GetSection("EmailSettings:SenderPassword").Value!;
+
+        // Console.WriteLine(senderEmail);
+        // Console.WriteLine(senderPassword);
+
+        string smtpServer = "smtp.gmail.com";
+        int smtpPort = 587;
+
+        // Create the email message
+        MailMessage message = new();
+        message.From = new MailAddress(senderEmail);
+        message.To.Add(recipientEmail);
+        message.Subject = "Email Confirmation";
+        message.Body = $"Please confirm your email by clicking the following link: {confirmationLink}";
+        message.IsBodyHtml = false;
+
+        // Configure SMTP client
+        SmtpClient smtpClient = new(smtpServer, smtpPort);
+        smtpClient.EnableSsl = true;
+        smtpClient.UseDefaultCredentials = false;
+        smtpClient.Credentials = new NetworkCredential(senderEmail, senderPassword);
+
+        // Send the email
+        try
+        {
+            smtpClient.Send(message);
+        }
+        catch (SmtpException ex)
+        {
+            // Handle any exceptions or log errors
+            Console.WriteLine($"Failed to send confirmation email: {ex.Message}");
+        }
+    }
+
 }

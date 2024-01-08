@@ -30,5 +30,11 @@ public partial class PasswordmanagerUser
 
     public DateTime? Datelastlogout { get; set; }
 
+    public DateTime? Datecreated { get; set; }
+
+    public DateTime? Dateretired { get; set; }
+
     public virtual ICollection<Usertoken> Usertokens { get; set; } = new List<Usertoken>();
+
+    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
 }
