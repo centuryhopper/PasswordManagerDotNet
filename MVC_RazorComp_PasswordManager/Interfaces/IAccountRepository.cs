@@ -12,6 +12,6 @@ public interface IAccountRepository
     Task<IEnumerable<string>> GetRolesAsync();
     Task<IEnumerable<string>> UpdateUserAsync(EditAccountModel model);
     Task<DeleteUserProfileStatus> DeleteUserAsync(string Id);
-    Task<bool> VerifyToken(AccountProviders accountProviders, string token, string userId);
+    Task<bool> VerifyTokenAsync(AccountProviders accountProviders, string token, string userId);
     Task<EmailConfirmStatus> IsEmailConfirmed(string email);
 }

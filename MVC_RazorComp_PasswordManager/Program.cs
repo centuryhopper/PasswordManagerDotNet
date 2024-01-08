@@ -5,6 +5,8 @@ using MVC_RazorComp_PasswordManager.Repositories;
 
 // TODO: change connection string before entering real data because previous connection string has already been committed to source control
 
+// old users will never get deleted. The userrole pairs they had will for the sake of simplicity
+
 
 var builder = WebApplication.CreateBuilder(args);
 

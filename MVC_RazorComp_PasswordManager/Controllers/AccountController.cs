@@ -28,6 +28,14 @@ public class AccountController : Controller
         return View();
     }
 
+    [AllowAnonymous]
+    public async Task<IActionResult> ConfirmEmail(string token, string userId)
+    {
+        var verifyToken = await accountRepository.VerifyTokenAsync(AccountProviders.EMAIL_CONFIRMATION, token, userId);
+
+        return View();
+    }
+
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
@@ -67,13 +75,14 @@ public class AccountController : Controller
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
-            var authProperties = new AuthenticationProperties {
+            var authProperties = new AuthenticationProperties
+            {
                 IsPersistent = true,
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
-            return RedirectToAction(nameof(HomeController.Index), "Home", new {userId = result.Id});
+            return RedirectToAction(nameof(HomeController.Index), "Home", new { userId = result.Id });
         }
         else
         {
@@ -114,13 +123,14 @@ public class AccountController : Controller
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
-            var authProperties = new AuthenticationProperties {
+            var authProperties = new AuthenticationProperties
+            {
                 IsPersistent = true,
             };
 
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
 
-            return RedirectToAction(nameof(HomeController.Index), "Home", new {userId = result.Id});
+            return RedirectToAction(nameof(HomeController.Index), "Home", new { userId = result.Id });
         }
         else
         {

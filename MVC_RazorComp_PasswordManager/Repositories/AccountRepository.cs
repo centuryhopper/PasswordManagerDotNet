@@ -64,7 +64,7 @@ public class AccountRepository : IAccountRepository
         var users = passwordAccountContext.PasswordmanagerUsers.AsQueryable();
         var roles = passwordAccountContext.Roles.AsQueryable();
         // var userroles = passwordAccountContext.Userroles.AsQueryable();
-        List<string> userroles = [ ];
+        List<string> userroles = [];
 
         List<UserModel> dbResult = [];
 
@@ -154,7 +154,7 @@ public class AccountRepository : IAccountRepository
                     Firstname = model.FirstName,
                     Lastname = model.LastName,
                     // TODO: mark as false when done testing registration
-                    Emailconfirmed = new BitArray(new bool[] { true }),
+                    Emailconfirmed = new BitArray(new bool[] { false }),
                     Lockoutenabled = new BitArray(new bool[] { false }),
                     Lockoutenddateutc = null,
                     Accessfailedcount = 0,
@@ -162,12 +162,6 @@ public class AccountRepository : IAccountRepository
                     Datelastlogout = null,
                 }
             );
-
-
-            // assign role of "User" to this user
-            var role = await passwordAccountContext.Roles.FirstAsync(r => r.Name == "User");
-            // await passwordAccountContext.Userroles.AddAsync(new Userrole { Roleid = role.Id, Userid = Id });
-            await passwordAccountContext.SaveChangesAsync();
 
             // create and send email confirmation link
             var token = TokenGenerator.GenerateToken(32);
@@ -186,8 +180,15 @@ public class AccountRepository : IAccountRepository
                 Userid = UserIdFK,
             });
 
+            var emailLink = $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
+
             // store token in user token table
-            SendConfirmationEmail(model.Email, $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}/confirm-email/?token={token}&userId={UserIdFK}");
+            SendConfirmationEmail(model.Email, $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}/ConfirmEmail/?token={token}&userId={UserIdFK}");
+
+            // assign role of "User" to this user
+            var role = await passwordAccountContext.Roles.FirstAsync(r => r.Name == "User");
+            // await passwordAccountContext.Userroles.AddAsync(new Userrole { Roleid = role.Id, Userid = Id });
+            await passwordAccountContext.SaveChangesAsync();
 
             return new AuthStatus { Successful = true, Id = Id, Email = model.Email, Name = model.FirstName + " " + model.LastName, Role = role.Name };
         }
@@ -236,7 +237,7 @@ public class AccountRepository : IAccountRepository
         return ["success!"];
     }
 
-    public async Task<bool> VerifyToken(AccountProviders accountProviders, string token, string userId)
+    public async Task<bool> VerifyTokenAsync(AccountProviders accountProviders, string token, string userId)
     {
         var loginProvider = accountProviders.ToString();
         try
@@ -248,8 +249,8 @@ public class AccountRepository : IAccountRepository
 
             if (string.IsNullOrEmpty(result.Providerkey) || result.Providerkey != token)
             {
-                Console.WriteLine($"token: {token}");
-                Console.WriteLine($"result: {result}");
+                // Console.WriteLine($"token: {token}");
+                // Console.WriteLine($"result: {result}");
                 return false;
             }
 
