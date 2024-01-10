@@ -13,7 +13,9 @@ public class RegisterModel
     public string Password { get; set; }
     [Compare(nameof(Password), ErrorMessage = "Confirm password doesn't match, Please try again!")]
     public string ConfirmPassword { get; set; }
+    [Display(Name = "First Name")]
     public string FirstName { get; set; }
+    [Display(Name = "Last Name")]
     public string LastName { get; set; }
     public string? Role { get; set; }
 

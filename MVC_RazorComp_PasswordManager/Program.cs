@@ -6,7 +6,7 @@ using MVC_RazorComp_PasswordManager.Repositories;
 // TODO: change connection string before entering real data because previous connection string has already been committed to source control
 
 // old users will never get deleted. The userrole pairs they had will for the sake of simplicity
-
+// dotnet ef dbcontext scaffold "" Npgsql.EntityFrameworkCore.PostgreSQL -o Temp -t userroles -t passwordmanager_accounts -t passwordmanager_users -t roles -t usertokens
 
 var builder = WebApplication.CreateBuilder(args);
 

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using MVC_RazorComp_PasswordManager.Interfaces;
 using MVC_RazorComp_PasswordManager.Models;
 using MVC_RazorComp_PasswordManager.Utilities;
@@ -114,23 +115,7 @@ public class AccountController : Controller
 
         if (result.Successful)
         {
-            TempData[TempDataKeys.ALERT_SUCCESS] = "Registration Successful!";
-            List<Claim> claims = [
-                new(ClaimTypes.NameIdentifier, result.Id),
-                new(ClaimTypes.Email, result.Email),
-                new(ClaimTypes.Role, result.Role),
-            ];
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = true,
-            };
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
-
-            return RedirectToAction(nameof(HomeController.Index), "Home", new { userId = result.Id });
+            TempData[TempDataKeys.ALERT_SUCCESS] = "Registration Successful! Please confirm your email to get started.";
         }
         else
         {

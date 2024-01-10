@@ -34,7 +34,7 @@ public partial class PasswordmanagerUser
 
     public DateTime? Dateretired { get; set; }
 
-    public virtual ICollection<Usertoken> Usertokens { get; set; } = new List<Usertoken>();
+    public virtual ICollection<Userrole> Userroles { get; set; } = new List<Userrole>();
 
-    public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
+    public virtual ICollection<Usertoken> Usertokens { get; set; } = new List<Usertoken>();
 }

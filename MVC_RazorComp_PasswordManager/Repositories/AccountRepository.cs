@@ -63,27 +63,27 @@ public class AccountRepository : IAccountRepository
     {
         var users = passwordAccountContext.PasswordmanagerUsers.AsQueryable();
         var roles = passwordAccountContext.Roles.AsQueryable();
-        // var userroles = passwordAccountContext.Userroles.AsQueryable();
-        List<string> userroles = [];
+        var userroles = passwordAccountContext.Userroles.AsQueryable();
+        // List<string> userroles = [];
 
-        List<UserModel> dbResult = [];
+        // List<UserModel> dbResult = [];
 
-        // var dbResult = from u in users
-        //                where u.Email == email
-        //                join ur in passwordAccountContext.Userroles on u.Id equals ur.Userid into userRoles_g
-        //                from userRole in userRoles_g.DefaultIfEmpty()
-        //                join r in passwordAccountContext.Roles on userRole.Roleid equals r.Id into roles_g
-        //                from r in roles_g.DefaultIfEmpty()
-        //                select new UserModel
-        //                {
-        //                    Id = u.Id,
-        //                    Salt = u.Salt,
-        //                    PasswordHash = u.Passwordhash,
-        //                    Email = u.Email,
-        //                    FirstName = u.Firstname,
-        //                    LastName = u.Lastname,
-        //                    Role = r.Name
-        //                };
+        var dbResult = from u in users
+                       where u.Email == email
+                       join ur in passwordAccountContext.Userroles on u.Id equals ur.Userid into userRoles_g
+                       from userRole in userRoles_g.DefaultIfEmpty()
+                       join r in passwordAccountContext.Roles on userRole.Roleid equals r.Id into roles_g
+                       from r in roles_g.DefaultIfEmpty()
+                       select new UserModel
+                       {
+                           Id = u.Id,
+                           Salt = u.Salt,
+                           PasswordHash = u.Passwordhash,
+                           Email = u.Email,
+                           FirstName = u.Firstname,
+                           LastName = u.Lastname,
+                           Role = r.Name
+                       };
 
         return dbResult.FirstOrDefault();
     }
@@ -139,7 +139,7 @@ public class AccountRepository : IAccountRepository
 
         try
         {
-            var Id = Guid.NewGuid().ToString();
+            var UserId = Guid.NewGuid().ToString();
             int salt = new Random().Next();
             var saltedPW = $"{model.Password}{salt}";
             var passwordHash = encryptionContext.OneWayHash(saltedPW);
@@ -147,7 +147,7 @@ public class AccountRepository : IAccountRepository
             await passwordAccountContext.PasswordmanagerUsers.AddAsync(
                 new PasswordmanagerUser
                 {
-                    Id = Id,
+                    Id = UserId,
                     Email = model.Email,
                     Salt = salt.ToString(),
                     Passwordhash = passwordHash,
@@ -170,7 +170,7 @@ public class AccountRepository : IAccountRepository
             var LoginProvider = AccountProviders.EMAIL_CONFIRMATION.ToString();
             // make sure there are no spaces to preserve consistent token identity when passing thru urls
             var ProviderKey = token.Replace(" ", "+");
-            var UserIdFK = Id;
+            var UserIdFK = UserId;
 
             await passwordAccountContext.Usertokens.AddAsync(new Usertoken
             {
@@ -183,14 +183,23 @@ public class AccountRepository : IAccountRepository
             var emailLink = $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}";
 
             // store token in user token table
-            SendConfirmationEmail(model.Email, $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}/ConfirmEmail/?token={token}&userId={UserIdFK}");
+            SendConfirmationEmail(model.Email, $"{httpContextAccessor.HttpContext.Request.Scheme}://{httpContextAccessor.HttpContext.Request.Host}/Account/ConfirmEmail/?token={token}&userId={UserIdFK}");
 
             // assign role of "User" to this user
-            var role = await passwordAccountContext.Roles.FirstAsync(r => r.Name == "User");
-            // await passwordAccountContext.Userroles.AddAsync(new Userrole { Roleid = role.Id, Userid = Id });
+            var role = await passwordAccountContext.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+            string roleId = Guid.NewGuid().ToString();
+            if (role is null)
+            {
+                await passwordAccountContext.Roles.AddAsync(new Role {
+                    Id = roleId,
+                    Name = "User"
+                });
+            }
+
+            await passwordAccountContext.Userroles.AddAsync(new Userrole { Roleid = role?.Id ?? roleId, Userid = UserId, Id = Guid.NewGuid().ToString()});
             await passwordAccountContext.SaveChangesAsync();
 
-            return new AuthStatus { Successful = true, Id = Id, Email = model.Email, Name = model.FirstName + " " + model.LastName, Role = role.Name };
+            return new AuthStatus { Successful = true, Id = UserId, Email = model.Email, Name = model.FirstName + " " + model.LastName, Role = role?.Name ?? roleId};
         }
         catch (System.Exception e)
         {
@@ -227,6 +236,7 @@ public class AccountRepository : IAccountRepository
 
         // TODO: change role as well if different
         // delete old userrole link and add new one
+        // await passwordAccountContext.
 
         // TODO: send confirmation email if user entered a new email
         // only remove the current working email once confirmed
@@ -256,7 +266,8 @@ public class AccountRepository : IAccountRepository
 
             // mark email as confirmed
             var updatedUserEmailConfirmed = await passwordAccountContext.PasswordmanagerUsers.FirstAsync(u => u.Id == userId);
-            updatedUserEmailConfirmed.Emailconfirmed.Set(0, true);
+            // updatedUserEmailConfirmed.Emailconfirmed.Set(0, true);
+            updatedUserEmailConfirmed.Emailconfirmed = new BitArray(new bool[] { true });
 
             await passwordAccountContext.SaveChangesAsync();
 
